@@ -1,0 +1,241 @@
+/* src/App.css */
+:root {
+  --deep: #0f3d3e;
+  --panel: #15494c;
+  --aqua: #2ec4b6;
+  --aqua-dim: #1e8c82;
+  --foam: #eaf6f3;
+  --amber: #ffb703;
+  --alert-red: #e8543e;
+  --line: rgba(234, 246, 243, 0.14);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: radial-gradient(circle at 20% -10%, #175457 0%, var(--deep) 55%, #0a2e2f 100%);
+  color: var(--foam);
+  font-family: "Manrope", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 40px 22px 60px;
+}
+
+.eyebrow {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--aqua);
+  margin: 0 0 6px;
+}
+
+h1 {
+  font-size: 30px;
+  font-weight: 800;
+  margin: 0 0 28px;
+  letter-spacing: -0.01em;
+}
+
+.tank-row {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.tank-shell {
+  position: relative;
+  width: 108px;
+  height: 200px;
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 2px solid var(--line);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.tank-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 0%;
+  background: linear-gradient(180deg, var(--aqua) 0%, var(--aqua-dim) 100%);
+  transition: height 0.6s ease;
+}
+
+.tank-marks {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+
+.tank-marks span {
+  display: block;
+  height: 1px;
+  background: var(--line);
+  margin: 0 10px;
+}
+
+.readout {
+  flex: 1;
+}
+
+.level-num {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 52px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--foam);
+}
+
+.level-num sup {
+  font-size: 22px;
+  color: var(--aqua);
+}
+
+.level-caption {
+  font-size: 13px;
+  color: rgba(234, 246, 243, 0.6);
+  margin-top: 4px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+
+.pump-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pump-label {
+  font-size: 14px;
+  color: rgba(234, 246, 243, 0.7);
+}
+
+.pump-value {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 20px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.pump-value.on {
+  color: var(--aqua);
+}
+.pump-value.off {
+  color: rgba(234, 246, 243, 0.5);
+}
+
+.toggle {
+  position: relative;
+  width: 58px;
+  height: 32px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.toggle .knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(234, 246, 243, 0.5);
+  transition: transform 0.25s ease, background 0.25s ease;
+}
+
+.toggle.on {
+  background: rgba(46, 196, 182, 0.25);
+  border-color: var(--aqua-dim);
+}
+.toggle.on .knob {
+  transform: translateX(26px);
+  background: var(--aqua);
+}
+
+.alert-panel {
+  border-left: 3px solid var(--aqua-dim);
+}
+.alert-panel.warn {
+  border-left-color: var(--amber);
+}
+.alert-panel.crit {
+  border-left-color: var(--alert-red);
+}
+
+.alert-text {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.alert-time {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: rgba(234, 246, 243, 0.5);
+  margin-top: 4px;
+}
+
+.log-title {
+  font-size: 12px;
+  color: rgba(234, 246, 243, 0.5);
+  margin: 22px 2px 10px;
+  font-family: "JetBrains Mono", monospace;
+  letter-spacing: 0.04em;
+}
+
+.log-entry {
+  font-size: 13px;
+  padding: 9px 2px;
+  border-bottom: 1px solid var(--line);
+  color: rgba(234, 246, 243, 0.75);
+  font-family: "JetBrains Mono", monospace;
+}
+.log-entry:last-child {
+  border-bottom: none;
+}
+
+.conn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: rgba(234, 246, 243, 0.45);
+  margin-top: 26px;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #666;
+}
+.dot.live {
+  background: var(--aqua);
+  box-shadow: 0 0 8px var(--aqua);
+}

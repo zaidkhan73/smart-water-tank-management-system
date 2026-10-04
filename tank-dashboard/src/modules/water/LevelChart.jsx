@@ -1,35 +1,63 @@
-// src/modules/water/LevelChart.jsx — dependency-free SVG line chart
+// src/modules/water/LevelChart.jsx — responsive SVG chart, touch/hover to read values
+import { useState } from "react";
 import { useLastN } from "../../useFirebase";
+import { useWidth } from "../../useMotion";
 import { WATER_PATH as W } from "../../config";
 
-const VB_W = 640, VB_H = 220, PAD = { l: 34, r: 10, t: 10, b: 24 };
+const H = 220, P = { l: 30, r: 8, t: 10, b: 26 };
+const clock = (t) => new Date(t).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+const full = (t) => new Date(t).toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
 
 export default function LevelChart() {
   const rows = useLastN(`${W}/history`, 120);
-  if (rows === undefined) return <div className="empty">Loading history…</div>;
-  const pts = rows.filter((r) => typeof r.t === "number" && typeof r.level === "number");
-  if (pts.length < 2)
-    return <div className="empty">History appears here once the device has logged a few readings.</div>;
+  const [wrap, w] = useWidth();
+  const [hi, setHi] = useState(null);
+  const pts = (rows || []).filter((r) => typeof r.t === "number" && typeof r.level === "number");
 
-  const t0 = pts[0].t, t1 = pts[pts.length - 1].t || t0 + 1;
-  const x = (t) => PAD.l + ((t - t0) / (t1 - t0 || 1)) * (VB_W - PAD.l - PAD.r);
-  const y = (v) => PAD.t + (1 - v / 100) * (VB_H - PAD.t - PAD.b);
-  const line = pts.map((p) => `${x(p.t).toFixed(1)},${y(p.level).toFixed(1)}`).join(" ");
-  const area = `${x(t0)},${y(0)} ${line} ${x(t1)},${y(0)}`;
-  const fmt = (t) => new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  let body = null;
+  if (rows === undefined) body = <div className="empty">Loading history…</div>;
+  else if (pts.length < 2) body = <div className="empty">History shows up after the device logs a few readings.</div>;
+  else if (w > 0) {
+    const t0 = pts[0].t, t1 = pts[pts.length - 1].t, span = t1 - t0 || 1;
+    const x = (t) => P.l + ((t - t0) / span) * (w - P.l - P.r);
+    const y = (v) => P.t + (1 - v / 100) * (H - P.t - P.b);
+    const line = pts.map((p) => `${x(p.t).toFixed(1)},${y(p.level).toFixed(1)}`).join(" ");
+    const cur = pts[hi !== null && hi < pts.length ? hi : pts.length - 1];
 
-  return (
-    <svg viewBox={`0 0 ${VB_W} ${VB_H}`} className="chart" role="img" aria-label="Water level over time">
-      {[0, 25, 50, 75, 100].map((g) => (
-        <g key={g}>
-          <line x1={PAD.l} x2={VB_W - PAD.r} y1={y(g)} y2={y(g)} className="grid" />
-          <text x={PAD.l - 6} y={y(g) + 4} textAnchor="end" className="axis">{g}%</text>
-        </g>
-      ))}
-      <polygon points={area} className="area" />
-      <polyline points={line} className="stroke" />
-      <text x={PAD.l} y={VB_H - 6} className="axis">{fmt(t0)}</text>
-      <text x={VB_W - PAD.r} y={VB_H - 6} textAnchor="end" className="axis">{fmt(t1)}</text>
-    </svg>
-  );
+    const move = (e) => {
+      const px = e.clientX - e.currentTarget.getBoundingClientRect().left;
+      let best = 0;
+      pts.forEach((p, i) => { if (Math.abs(x(p.t) - px) < Math.abs(x(pts[best].t) - px)) best = i; });
+      setHi(best);
+    };
+
+    body = (
+      <>
+        <div className="chart-read">
+          <span className="read-num">{cur.level}%</span>
+          <span className="muted">{full(cur.t)}</span>
+        </div>
+        <svg
+          width={w} height={H} role="img" aria-label="Water level over time"
+          style={{ touchAction: "pan-y" }}
+          onPointerMove={move} onPointerDown={move}
+          onPointerLeave={(e) => e.pointerType === "mouse" && setHi(null)}
+        >
+          {[0, 50, 100].map((g) => (
+            <g key={g}>
+              <line className="grid" x1={P.l} x2={w - P.r} y1={y(g)} y2={y(g)} />
+              <text className="axis" x={P.l - 8} y={y(g) + 4} textAnchor="end">{g}</text>
+            </g>
+          ))}
+          <polygon className="area" points={`${x(t0)},${y(0)} ${line} ${x(t1)},${y(0)}`} />
+          <polyline className="stroke" pathLength="1" points={line} />
+          <line className="cursor" x1={x(cur.t)} x2={x(cur.t)} y1={P.t} y2={H - P.b} />
+          <circle className="pt" cx={x(cur.t)} cy={y(cur.level)} r="5" />
+          <text className="axis" x={P.l} y={H - 6}>{clock(t0)}</text>
+          <text className="axis" x={w - P.r} y={H - 6} textAnchor="end">{clock(t1)}</text>
+        </svg>
+      </>
+    );
+  }
+  return <div ref={wrap}>{body}</div>;
 }

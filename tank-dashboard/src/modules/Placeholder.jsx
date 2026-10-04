@@ -7,17 +7,17 @@ export function PlaceholderTab({ name, expects }) {
       <header className="page-head">
         <div>
           <h1>{name}</h1>
-          <p className="muted">This module is not connected yet.</p>
+          <p className="muted">Not connected yet.</p>
         </div>
       </header>
-      <section className="panel">
-        <h2>What this tab needs from the {name.toLowerCase()} team</h2>
+      <section className="surface">
+        <h2>What we need from the {name.toLowerCase()} team</h2>
         <ul className="needs">
           {expects.map((e) => <li key={e}>{e}</li>)}
         </ul>
         <p className="muted small">
-          Events should use the common shape <code>{`{ t, type, msg }`}</code> under <code>/{name.toLowerCase()}/events</code> so
-          they show up in logs and email alerts without extra work.
+          Events should look like <code>{`{ t, type, msg }`}</code> under <code>/{name.toLowerCase()}/events</code>, so
+          they appear in logs and email alerts without extra work.
         </p>
       </section>
     </>
@@ -25,10 +25,5 @@ export function PlaceholderTab({ name, expects }) {
 }
 
 export function PlaceholderCard() {
-  return (
-    <>
-      <div className="card-big muted">–</div>
-      <div className="card-line muted">Not connected yet</div>
-    </>
-  );
+  return <span className="stat muted">Not connected</span>;
 }

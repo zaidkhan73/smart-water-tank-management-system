@@ -1,19 +1,15 @@
-// src/modules/water/LogsTable.jsx — tank FULL / EMPTY (and pump) event log
+// src/modules/water/LogsTable.jsx — tank FULL / EMPTY (and pump) log, phone-friendly list
 import { useMemo, useState } from "react";
 import { useLastN, fmtDuration } from "../../useFirebase";
 import { WATER_PATH as W } from "../../config";
+import Seg from "../../Seg";
 
 const TYPES = {
-  FULL:     { label: "Tank full",  cls: "ok" },
-  EMPTY:    { label: "Tank empty", cls: "crit" },
-  PUMP_ON:  { label: "Pump on",    cls: "info" },
-  PUMP_OFF: { label: "Pump off",   cls: "info" },
+  FULL:     { label: "Tank full",  tone: "ok" },
+  EMPTY:    { label: "Tank empty", tone: "crit" },
+  PUMP_ON:  { label: "Pump on",    tone: "water" },
+  PUMP_OFF: { label: "Pump off",   tone: "water" },
 };
-const FILTERS = [
-  ["all", "All"],
-  ["tank", "Full / Empty"],
-  ["pump", "Pump"],
-];
 
 export default function LogsTable() {
   const events = useLastN(`${W}/events`, 200);
@@ -21,9 +17,8 @@ export default function LogsTable() {
 
   const rows = useMemo(() => {
     if (!events) return [];
-    // how long since the opposite event (e.g. "full after 14 min")
-    let lastFull = null, lastEmpty = null;
-    const withGap = events
+    let lastFull = null, lastEmpty = null; // for "Filled in 14 min"
+    return events
       .filter((e) => typeof e.t === "number")
       .map((e) => {
         let gap = null;
@@ -32,49 +27,39 @@ export default function LogsTable() {
         if (e.type === "FULL") lastFull = e.t;
         if (e.type === "EMPTY") lastEmpty = e.t;
         return { ...e, gap };
-      });
-    return withGap
-      .filter((e) =>
-        filter === "all" ? true : filter === "tank" ? e.type === "FULL" || e.type === "EMPTY" : e.type.startsWith("PUMP")
-      )
+      })
+      .filter((e) => (filter === "all" ? true : filter === "tank" ? e.type === "FULL" || e.type === "EMPTY" : e.type.startsWith("PUMP")))
       .reverse();
   }, [events, filter]);
 
   return (
     <>
-      <div className="chips" role="tablist" aria-label="Filter logs">
-        {FILTERS.map(([id, label]) => (
-          <button key={id} className={`chip ${filter === id ? "on" : ""}`} onClick={() => setFilter(id)}>
-            {label}
-          </button>
-        ))}
-      </div>
-
+      <Seg value={filter} onChange={setFilter} items={[["all", "All"], ["tank", "Full / empty"], ["pump", "Pump"]]} />
       {events === undefined ? (
         <div className="empty">Loading logs…</div>
       ) : rows.length === 0 ? (
-        <div className="empty">No events yet. A log entry is added each time the tank becomes full or empty.</div>
+        <div className="empty">No events yet. An entry is added each time the tank becomes full or empty.</div>
       ) : (
-        <div className="table-wrap">
-          <table className="logs">
-            <thead>
-              <tr><th>Time</th><th>Event</th><th>Level</th><th>Note</th></tr>
-            </thead>
-            <tbody>
-              {rows.map((e) => {
-                const meta = TYPES[e.type] || { label: e.type, cls: "info" };
-                return (
-                  <tr key={e.id}>
-                    <td>{new Date(e.t).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}</td>
-                    <td><span className={`tag ${meta.cls}`}>{meta.label}</span></td>
-                    <td>{typeof e.level === "number" ? `${e.level}%` : "–"}</td>
-                    <td className="muted">{e.gap || e.msg || ""}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <ul className="logs">
+          {rows.map((e) => {
+            const meta = TYPES[e.type] || { label: e.type, tone: "water" };
+            const d = new Date(e.t);
+            const note = [e.gap || e.msg, typeof e.level === "number" ? `${e.level}%` : null].filter(Boolean).join(" · ");
+            return (
+              <li key={e.id} className="log">
+                <span className={`pip ${meta.tone}`} />
+                <div className="row-main">
+                  <div className="row-title">{meta.label}</div>
+                  {note && <div className="row-sub">{note}</div>}
+                </div>
+                <div className="log-time">
+                  <b>{d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</b>
+                  <span className="muted">{d.toLocaleDateString([], { day: "numeric", month: "short" })}</span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </>
   );

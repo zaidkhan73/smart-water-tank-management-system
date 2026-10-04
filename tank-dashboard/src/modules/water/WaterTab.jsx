@@ -5,9 +5,36 @@ import { db } from "../../firebase";
 import { WATER_PATH as W } from "../../config";
 import { useAuth } from "../../auth/useAuth";
 import { ago } from "../../useFirebase";
+import { useRise, useTween } from "../../useMotion";
+import Seg from "../../Seg";
 import { useWaterLive } from "./useWater";
 import LevelChart from "./LevelChart";
 import LogsTable from "./LogsTable";
+
+// The tank itself: water fills up on load, waves drift, number counts up.
+// The number is drawn twice (dark on air, white on water) so it is always readable.
+function Hero({ level, distance, filling }) {
+  const rise = useRise(level);
+  const n = useTween(level);
+  const readout = (
+    <>
+      <span className="big">{n}<small>%</small></span>
+      <span className="cap">{distance !== null ? `${distance.toFixed(1)} cm to water` : "Waiting for sensor"}</span>
+    </>
+  );
+  return (
+    <div className={`hero ${filling ? "filling" : ""}`} role="img" aria-label={`Tank is ${level} percent full`}>
+      <div className="readout">{readout}</div>
+      <div className={`water ${rise < 2 ? "empty" : ""}`} style={{ height: `${rise}%` }}>
+        <i className="wave w1" />
+        <i className="wave w2" />
+        <div className="body">
+          <div className="readout on-water" aria-hidden>{readout}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function WaterTab() {
   const w = useWaterLive();
@@ -15,7 +42,7 @@ export default function WaterTab() {
   const [view, setView] = useState("live");
   const [requested, setRequested] = useState(null); // "ON" | "OFF" sent, waiting for the device
 
-  // "sending" ends once the device confirms the new state, or after 8s
+  // "Turning on…" ends when the device confirms, or after 8 s
   const pending = requested && w.pump !== requested ? requested : null;
   useEffect(() => {
     if (!requested) return;
@@ -25,84 +52,80 @@ export default function WaterTab() {
 
   const togglePump = () => {
     const next = w.pump === "ON" ? "OFF" : "ON";
+    navigator.vibrate?.(12);
     setRequested(next);
     set(ref(db, `${W}/pump/command`), next).catch(() => setRequested(null));
   };
 
-  const alertClass = w.alert.includes("FULL") ? "crit" : w.alert.includes("nearing") ? "warn" : "";
-  const shown = pending || w.pump;
+  const tone = w.alert.includes("FULL") ? "crit" : w.alert.includes("nearing") ? "warn" : "ok";
+  const status = w.lastSeen ? (w.online ? "Online" : `Last seen ${ago(w.lastSeen, w.now)}`) : "Waiting for device";
 
   return (
     <>
       <header className="page-head">
         <div>
           <h1>Water</h1>
-          <p className="muted">Main tank · {w.lastSeen ? (w.online ? "device online" : `last seen ${ago(w.lastSeen, w.now)}`) : "waiting for device"}</p>
+          <p className="muted">Main tank · {status}</p>
         </div>
-        <div className="seg" role="tablist">
-          {[["live", "Live"], ["history", "History"], ["logs", "Logs"]].map(([id, label]) => (
-            <button key={id} className={view === id ? "on" : ""} onClick={() => setView(id)}>{label}</button>
-          ))}
-        </div>
+        <Seg value={view} onChange={setView} items={[["live", "Live"], ["history", "History"], ["logs", "Logs"]]} />
       </header>
 
-      {view === "live" && (
-        <div className="live">
-          <section className="gauge-panel">
-            <div className="tank" aria-label={`Tank is ${w.level}% full`}>
-              <div className="fill" style={{ height: `${w.level}%` }} />
-              {[80, 50, 20].map((m) => (
-                <span key={m} className="mark" style={{ bottom: `${m}%` }}>{m}</span>
-              ))}
-            </div>
-            <div>
-              <div className="gauge-num">{w.level}<small>%</small></div>
-              <div className="muted">
-                {w.distance !== null ? `${w.distance.toFixed(1)} cm from sensor to water` : "Waiting for sensor data…"}
-              </div>
-            </div>
-          </section>
-
-          <section className="stack">
-            <div className="panel pump-row">
-              <div>
-                <div className="muted">Pump</div>
-                <div className={`pump-val ${shown === "ON" ? "on" : ""}`}>
-                  {pending ? `Turning ${pending.toLowerCase()}…` : w.pump}
+      <div className="view" key={view}>
+        {view === "live" && (
+          <div className="live">
+            <Hero level={w.level} distance={w.distance} filling={w.pump === "ON"} />
+            <div className="group">
+              <div className="row">
+                <div className="row-main">
+                  <div className="row-title">Pump</div>
+                  <div className="row-sub">
+                    {pending ? `Turning ${pending.toLowerCase()}…` : w.pump === "ON" ? "Running" : "Off"}
+                    {!isAdmin && " · admins only"}
+                  </div>
                 </div>
-                {!isAdmin && <div className="muted small">Only admins can switch the pump.</div>}
+                <button
+                  className={`switch ${w.pump === "ON" ? "on" : ""}`}
+                  onClick={togglePump}
+                  disabled={!isAdmin || !!pending}
+                  role="switch"
+                  aria-checked={w.pump === "ON"}
+                  aria-label="Pump"
+                >
+                  <span className="knob" />
+                </button>
               </div>
-              <button
-                className={`toggle ${w.pump === "ON" ? "on" : ""}`}
-                onClick={togglePump}
-                disabled={!isAdmin || !!pending}
-                aria-label="Toggle pump"
-                aria-pressed={w.pump === "ON"}
-              >
-                <span className="knob" />
-              </button>
+              <div className="row">
+                <div className="row-main">
+                  <div className="row-title">Latest alert</div>
+                  <div className="row-sub">{w.alert || "None so far"}</div>
+                </div>
+                <span className={`dot ${tone}`} />
+              </div>
+              <div className="row">
+                <div className="row-main">
+                  <div className="row-title">Device</div>
+                  <div className="row-sub">{status}</div>
+                </div>
+                <span className={`dot ${w.online ? "on" : ""}`} />
+              </div>
             </div>
+          </div>
+        )}
 
-            <div className={`panel alert ${alertClass}`}>
-              <div>{w.alert || "No alerts"}</div>
-            </div>
+        {view === "history" && (
+          <section className="surface">
+            <h2>Level over time</h2>
+            <LevelChart />
           </section>
-        </div>
-      )}
+        )}
 
-      {view === "history" && (
-        <section className="panel">
-          <h2>Level over time</h2>
-          <LevelChart />
-        </section>
-      )}
-
-      {view === "logs" && (
-        <section className="panel">
-          <h2>Tank log</h2>
-          <LogsTable />
-        </section>
-      )}
+        {view === "logs" && (
+          <section className="surface">
+            <h2>Tank log</h2>
+            <LogsTable />
+          </section>
+        )}
+      </div>
     </>
   );
 }

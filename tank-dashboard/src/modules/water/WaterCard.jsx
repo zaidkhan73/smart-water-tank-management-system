@@ -1,19 +1,13 @@
-// src/modules/water/WaterCard.jsx — summary shown on the Home page
+// src/modules/water/WaterCard.jsx — right-hand side of the Water row on Home
 import { useWaterLive } from "./useWater";
-import { ago } from "../../useFirebase";
 
 export default function WaterCard() {
   const w = useWaterLive();
   return (
-    <>
-      <div className="card-big">
-        {w.level}
-        <small>%</small>
-      </div>
-      <div className="card-line">Pump {w.pump}</div>
-      <div className="card-line muted">
-        {w.lastSeen ? (w.online ? "Device online" : `Last seen ${ago(w.lastSeen, w.now)}`) : "Waiting for device"}
-      </div>
-    </>
+    <span className="stat">
+      <span className="mini"><i style={{ width: `${w.level}%` }} /></span>
+      <span className="val">{w.level}%</span>
+      <span className={`dot ${w.online ? "on" : ""}`} title={w.online ? "Device online" : "Device offline"} />
+    </span>
   );
 }

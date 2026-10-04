@@ -3,12 +3,13 @@
 import WaterTab from "./water/WaterTab";
 import WaterCard from "./water/WaterCard";
 import { PlaceholderTab, PlaceholderCard } from "./Placeholder";
+import { DropIcon, ParkingIcon, BinIcon } from "../icons";
 
 export const MODULES = [
   {
     id: "water",
     name: "Water",
-    icon: "💧",
+    Icon: DropIcon,
     blurb: "Tank level, pump control, fill and empty log",
     Tab: WaterTab,
     Card: WaterCard,
@@ -16,7 +17,7 @@ export const MODULES = [
   {
     id: "parking",
     name: "Parking",
-    icon: "🚗",
+    Icon: ParkingIcon,
     blurb: "Slot availability and entry log",
     Tab: () => (
       <PlaceholderTab
@@ -34,7 +35,7 @@ export const MODULES = [
   {
     id: "waste",
     name: "Waste",
-    icon: "🗑️",
+    Icon: BinIcon,
     blurb: "Bin fill levels and collection log",
     Tab: () => (
       <PlaceholderTab
